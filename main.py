@@ -5,7 +5,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, Messa
 TOKEN = os.getenv("BOT_TOKEN")
 
 # ВСТАВИМ ТВОЙ ID ПОСЛЕ
-TARGET_CHAT_ID = 123456789
+TARGET_CHAT_ID = "твоя личка"
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
