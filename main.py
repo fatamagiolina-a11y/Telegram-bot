@@ -1,9 +1,13 @@
 import os
 os.system("pip install python-telegram-bot==13.15")
+
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
+# 🔐 ВСТАВЬ СЮДА СВОЙ ТОКЕН
 TOKEN = "8659770527:AAH4cb-P-Trqxc6IjTDVJHGEX-ZP2K6Lfio"
+
+# ❤️ ТВОЙ TELEGRAM ID
 TARGET_CHAT_ID = 2028499774
 
 
@@ -24,7 +28,8 @@ def handle_channel_post(update: Update, context: CallbackContext):
         elif message.text:
             text = message.text
 
-        text += "\n\n📲 Заказать: https://wa.me/393516282355"
+        # 🔥 добавляем WhatsApp ссылку
+        text = text + "\n\n📲 Заказать: https://wa.me/393516282355"
 
         if message.photo:
             context.bot.send_photo(
