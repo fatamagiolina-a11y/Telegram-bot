@@ -4,20 +4,30 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, Messa
 # 🔐 ТВОЙ ТОКЕН
 TOKEN = "8659770527:AAEvO0PsPMPOwDvZA0G6d5TX2XdqmdK8cDU"
 
-# 📩 ТВОЙ ID
+# 📩 ТВОЙ TELEGRAM ID
 TARGET_CHAT_ID = 2028499794
 
-# 💬 /start
+
+# 💬 команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("PIKANTO bot работает 🔥")
+
 
 # 📢 обработка постов канала
 async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        message = update.channel_post
+        print("CHAT TYPE:", update.effective_chat.type)
+        print("CHAT ID:", update.effective_chat.id)
 
-        # ❗ если это не пост канала — игнор
+        # получаем сообщение
+        message = update.effective_message
+
+        # если нет сообщения — выходим
         if not message:
+            return
+
+        # если это не канал — игнор
+        if update.effective_chat.type != "channel":
             return
 
         text = ""
@@ -29,7 +39,7 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
 
         text = f"{text}\n\n📲 Заказать: https://wa.me/393516282355"
 
-        # 📸 если фото
+        # если фото
         if message.photo:
             await context.bot.send_photo(
                 chat_id=TARGET_CHAT_ID,
@@ -45,12 +55,11 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
     except Exception as e:
         print("ERROR:", e)
 
+
 # 🚀 запуск
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
-
-# 🔥 ВАЖНО — ловим ВСЁ и фильтруем внутри
 app.add_handler(MessageHandler(filters.ALL, handle_channel_post))
 
 app.run_polling()
