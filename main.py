@@ -36,7 +36,3 @@ app.add_handler(CommandHandler("start", start))
 app.add_handler(ChannelPostHandler(handle_channel_post))
 
 app.run_polling()
-
-
-
-
