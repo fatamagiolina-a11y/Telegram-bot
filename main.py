@@ -8,7 +8,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Callb
 TOKEN = "8659770527:AAH4cb-P-Trqxc6IjTDVJHGEX-ZP2K6Lfio"
 
 # ❤️ ТВОЙ TELEGRAM ID
-TARGET_CHAT_ID = 2028499774
+TARGET_CHAT_ID = 1666542263
 
 
 def start(update: Update, context: CallbackContext):
