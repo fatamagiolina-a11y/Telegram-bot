@@ -1,5 +1,5 @@
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, ChannelPostHandler
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
 # 🔐 ВСТАВЬ СЮДА СВОЙ ТОКЕН
 TOKEN = "8659770527:AAEvO0PsPMPOwDvZA0G6d5TX2XdqmdK8cDU"
@@ -49,6 +49,6 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
-app.add_handler(ChannelPostHandler(handle_channel_post))
+app.add_handler(MessageHandler(filters.ALL, handle_channel_post))
 
 app.run_polling()
