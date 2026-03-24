@@ -2,45 +2,34 @@ import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = 8659770527:AAEvO0PsPMPOwDvZA0G6d5TX2XdqmdK8cDU
 
-# ВСТАВИМ ТВОЙ ID ПОСЛЕ
 TARGET_CHAT_ID = 2028499794
-
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Привет! Это бот PIKANTO 🔥")
 
+async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message = update.channel_post
 
-# 👉 получить свой ID
-async def get_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(f"Ваш ID: {update.message.chat_id}")
+    caption = message.caption if message.caption else message.text if message.text else ""
+    new_caption = caption + "\n\n📲 Заказать: https://wa.me/393516282355
 
-
-# 👉 пересылка из канала + WhatsApp
-async def forward_from_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.channel_post:
-        caption = update.channel_post.caption or update.channel_post.text or ""
-
-        new_caption = f"{caption}\n\n📲 Заказать в WhatsApp: https://wa.me/393516282355"
-
-        if update.channel_post.photo:
-            await context.bot.send_photo(
-                chat_id=TARGET_CHAT_ID,
-                photo=update.channel_post.photo[-1].file_id,
-                caption=new_caption
-            )
-        else:
-            await context.bot.send_message(
-                chat_id=TARGET_CHAT_ID,
-                text=new_caption
-            )
-
+    if message.photo:
+        await context.bot.send_photo(
+            chat_id=TARGET_CHAT_ID,
+            photo=message.photo[-1].file_id,
+            caption=new_caption
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=TARGET_CHAT_ID,
+            text=new_caption
+        )
 
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("id", get_id))
-app.add_handler(MessageHandler(filters.ALL, forward_from_channel))
+app.add_handler(MessageHandler(filters.ALL, handle_channel_post))
 
 app.run_polling()
