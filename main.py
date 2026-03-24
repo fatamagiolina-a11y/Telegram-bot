@@ -62,11 +62,8 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
-
-# ❗️КЛЮЧЕВОЕ — обработчик канала
 app.add_handler(ChannelPostHandler(handle_channel_post))
 
-# 🔥 убираем webhook конфликт
-app.bot.delete_webhook(drop_pending_updates=True)
+print("BOT STARTED...")
 
 app.run_polling()
