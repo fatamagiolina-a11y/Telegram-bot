@@ -1,35 +1,35 @@
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
-# 🔐 ВСТАВЬ СЮДА СВОЙ ТОКЕН
+# 🔐 ТВОЙ ТОКЕН
 TOKEN = "8659770527:AAEvO0PsPMPOwDvZA0G6d5TX2XdqmdK8cDU"
 
-# 📩 ТВОЙ TELEGRAM ID
+# 📩 ТВОЙ ID
 TARGET_CHAT_ID = 2028499794
 
-# 💬 команда /start
+# 💬 /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("PIKANTO bot работает 🔥")
 
-# 📢 обработка постов из канала
+# 📢 обработка постов канала
 async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         message = update.channel_post
 
+        # ❗ если это не пост канала — игнор
         if not message:
             return
 
-        # безопасно получаем текст
         text = ""
+
         if message.caption:
             text = message.caption
         elif message.text:
             text = message.text
 
-        # добавляем WhatsApp ссылку
         text = f"{text}\n\n📲 Заказать: https://wa.me/393516282355"
 
-        # если есть фото
+        # 📸 если фото
         if message.photo:
             await context.bot.send_photo(
                 chat_id=TARGET_CHAT_ID,
@@ -49,6 +49,8 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
-app.add_handler(MessageHandler(filters.ChatType.CHANNEL, handle_channel_post))
+
+# 🔥 ВАЖНО — ловим ВСЁ и фильтруем внутри
+app.add_handler(MessageHandler(filters.ALL, handle_channel_post))
 
 app.run_polling()
