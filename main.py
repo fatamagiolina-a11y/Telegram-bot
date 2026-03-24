@@ -1,3 +1,5 @@
+import os
+os.system("pip install python-telegram-bot==13.15")
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
