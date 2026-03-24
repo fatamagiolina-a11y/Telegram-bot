@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
 # 🔐 ТВОЙ ТОКЕН
-TOKEN = "8659770527:AAEvO0PsPMPOwDvZA0G6d5TX2XdqmdK8cDU"
+TOKEN = "8659770527:AAH4cb-P-Trqxc6IjTDVJHGEX-ZP2K6Lfio"
 
 # 📩 ТВОЙ TELEGRAM ID
 TARGET_CHAT_ID = 2028499794
