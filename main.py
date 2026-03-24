@@ -19,14 +19,11 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
         print("CHAT TYPE:", update.effective_chat.type)
         print("CHAT ID:", update.effective_chat.id)
 
-        # получаем сообщение
         message = update.effective_message
 
-        # если нет сообщения — выходим
         if not message:
             return
 
-        # если это не канал — игнор
         if update.effective_chat.type != "channel":
             return
 
@@ -39,7 +36,6 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
 
         text = f"{text}\n\n📲 Заказать: https://wa.me/393516282355"
 
-        # если фото
         if message.photo:
             await context.bot.send_photo(
                 chat_id=TARGET_CHAT_ID,
@@ -61,5 +57,8 @@ app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.ALL, handle_channel_post))
+
+# 🔥 КРИТИЧНО — убираем конфликт webhook
+app.bot.delete_webhook(drop_pending_updates=True)
 
 app.run_polling()
