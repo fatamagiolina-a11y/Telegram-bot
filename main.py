@@ -2,7 +2,7 @@ import os
 from telegram import Update
 from telegram.ext import ChannelPostHandler
 
-TOKEN = 8659770527:AAEvO0PsPMPOwDvZA0G6d5TX2XdqmdK8cDU
+TOKEN = "8659770527:AAEvO0PsPMPOwDvZA0G6d5TX2XdqmdK8cDU"
 
 TARGET_CHAT_ID = 2028499794
 
