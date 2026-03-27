@@ -89,30 +89,29 @@ if price_text:
     final_text += f"{price_text}\n"
 
 final_text += "\n📲 Заказать: https://wa.me/393516282355"
+try:
+    # 🔥 ПРИОРИТЕТ ВИДЕО
+    if data["video"]:
+        context.bot.send_video(
+            chat_id=CHANNEL_ID,
+            video=data["video"],
+            caption=final_text
+        )
 
-    try:
-        # 🔥 ПРИОРИТЕТ ВИДЕО
-        if data["video"]:
-            context.bot.send_video(
-                chat_id=CHANNEL_ID,
-                video=data["video"],
-                caption=final_text
-            )
+    # 📸 ИНАЧЕ ФОТО АЛЬБОМ
+    elif data["photos"]:
+        media = []
 
-        # 📸 ИНАЧЕ ФОТО АЛЬБОМ
-        elif data["photos"]:
-            media = []
+        for i, photo in enumerate(data["photos"][:10]):
+            if i == 0:
+                media.append(InputMediaPhoto(media=photo, caption=final_text))
+            else:
+                media.append(InputMediaPhoto(media=photo))
 
-            for i, photo in enumerate(data["photos"][:10]):
-                if i == 0:
-                    media.append(InputMediaPhoto(media=photo, caption=final_text))
-                else:
-                    media.append(InputMediaPhoto(media=photo))
+        context.bot.send_media_group(chat_id=CHANNEL_ID, media=media)
 
-            context.bot.send_media_group(chat_id=CHANNEL_ID, media=media)
-
-    except Exception as e:
-        print("ERROR:", e)
+except Exception as e:
+    print("ERROR:", e)
 
     # очистка
     user_data_store[user_id] = {"photos": [], "video": None}
