@@ -1,138 +1,209 @@
-import os
 import re
-from telegram import Update, InputMediaPhoto
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+import logging
+from aiogram import Bot, Dispatcher, types
+from aiogram.utils import executor
 
-TOKEN = os.getenv("BOT_TOKEN")
+API_TOKEN = "8659770527:AAHH5j7I5-QqwO8CvHZ6CgqqnMr5Kda-Prw"
 CHANNEL_ID = "@brandpils"
 
-# ===== БРЕНДЫ =====
+logging.basicConfig(level=logging.INFO)
+
+bot = Bot(token=API_TOKEN)
+dp = Dispatcher(bot)
+
+# =========================
+# 📦 ХРАНЕНИЕ МЕДИА
+# =========================
+
+user_data = {}
+
+# =========================
+# 🏷 БРЕНДЫ (очищенные)
+# =========================
+
 BRANDS = [
-    "VIVETTA","MSGM","N21","GCDS",
-    "ICEBERG","ICE PLAY","DSQUARED2",
-    "JOHN RICHMOND","LOVE MOSCHINO",
-    "KARL LAGERFELD","MAX MARA","WEEKEND",
-    "MARELLA","EMME MARELLA","IBLUES",
-    "LIU JO","PINKO","TWINSET",
-    "ELISABETTA FRANCHI","GAELLE",
-    "ESSENTIEL","PLEASE","RELISH",
-    "VICOLO","RINASCIMENTO"
+    "AIM", "AVENUE 67 MILANO", "BLANCHA", "COUNTY OF MILAN",
+    "CULTI MILANO", "D'EXTERIOR", "DE SIENA", "DSQUARED2",
+    "ERMANNO FIRENZE", "ERMANNO SCERVINO LIFE", "ESSENTIVE",
+    "FABIANA FILIPPI", "FALIERO SARTI", "GCDS",
+    "GIUSEPPE DI MORABITO", "ICE PLAY", "ICEBERG",
+    "ICEBERG JEANS", "JACOB COHEN", "JOHN RICHMOND",
+    "KARL LAGERFELD", "LA MILANESA", "LIU JO",
+    "LOVE MOSCHINO", "MARELLA", "MAX MARA",
+    "MSGM", "N21", "NATASHA ZINKO",
+    "PAPERLACE", "PERSONA BY MARINA RINALDI",
+    "POEVE", "SEVENTY", "SHAFT JEANS",
+    "THE ANTIPODE", "THEMOIRÈ", "VEE COLLECTIVE",
+    "VERSACE JEANS COUTURE", "VIVETTA",
+    "WEEKEND"
 ]
 
-# ===== КАТЕГОРИИ =====
-CATEGORIES = [
-    "ПАЛЬТО","КУРТКА","ПЛАТЬЕ","ЮБКА",
-    "БРЮКИ","ДЖИНСЫ","КОСТЮМ",
-    "СВИТЕР","ФУТБОЛКА",
-    "ОБУВЬ","БАЛЕТКИ","ТУФЛИ","КРОССОВКИ",
-    "СУМКА"
-]
+# --- бренд
+def detect_brand(text):
+    t = text.upper()
 
-# ===== ПАМЯТЬ =====
-user_data_store = {}
+    if "WEEKEND" in t:
+        return "WEEKEND"
+    if "MAX MARA" in t:
+        return "MAX MARA"
+    if "MARELLA" in t:
+        return "MARELLA"
 
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text("PIKANTO bot работает 🔥")
+    for b in BRANDS:
+        if b in t:
+            return b
 
-# ===== СОХРАНЯЕМ МЕДИА =====
-def handle_media(update: Update, context: CallbackContext):
-    user_id = update.message.from_user.id
+    return ""
 
-    if user_id not in user_data_store:
-        user_data_store[user_id] = {"photos": [], "video": None}
+# =========================
+# 👗 КАТЕГОРИЯ
+# =========================
 
-    # 🎥 видео
-    if update.message.video:
-        user_data_store[user_id]["video"] = update.message.video.file_id
+def detect_category(text):
+    t = text.lower()
 
-    # 📸 фото (ВАЖНО: file_id)
-    if update.message.photo:
-        photo = update.message.photo[-1].file_id
-        user_data_store[user_id]["photos"].append(photo)
+    if "платье" in t:
+        return "платье"
+    if "куртка" in t:
+        return "куртка"
+    if "костюм" in t:
+        return "костюм"
+    if "пальто" in t:
+        return "пальто"
+    if "джинсы" in t:
+        return "джинсы"
 
-# ===== ОБРАБОТКА ТЕКСТА =====
-def handle_text(update: Update, context: CallbackContext):
-    user_id = update.message.from_user.id
-    text = update.message.text.upper()
+    return "товар"
 
-    data = user_data_store.get(user_id)
+# =========================
+# 📏 РАЗМЕРЫ (твоя версия FIX)
+# =========================
 
-    if not data:
+VALID_SIZES = {
+    "36","37","38","39","40","42","44","46",
+    "XS","S","M","L","XL"
+}
+
+def extract_sizes(text):
+    words = re.findall(r'\b[A-Z0-9]+\b', text.upper())
+
+    sizes = []
+    for w in words:
+        if w in VALID_SIZES:
+            sizes.append(w)
+
+    sizes = list(dict.fromkeys(sizes))
+
+    return " ".join(sizes)
+
+# =========================
+# ✍️ ТЕКСТ
+# =========================
+
+def build_caption(text):
+    brand = detect_brand(text)
+    category = detect_category(text)
+    sizes = extract_sizes(text)
+
+    hashtags = ""
+    if brand:
+        hashtags += f"#{brand.lower().replace(' ', '')} "
+    hashtags += f"#{category}"
+
+    return f"""
+{text}
+
+📏 Размеры: {sizes}
+
+💸 -40%
+
+{hashtags}
+
+📲 Заказать:
+https://wa.me/393516282355
+"""
+
+# =========================
+# 📸 СОХРАНЕНИЕ МЕДИА (FIX АЛЬБОМА)
+# =========================
+
+@dp.message_handler(content_types=['photo', 'video'])
+async def save_media(message: types.Message):
+    user_id = message.from_user.id
+
+    if user_id not in user_data:
+        user_data[user_id] = {
+            "media": [],
+            "media_group_id": None
+        }
+
+    # альбом
+    if message.media_group_id:
+        if user_data[user_id]["media_group_id"] != message.media_group_id:
+            user_data[user_id]["media"] = []
+            user_data[user_id]["media_group_id"] = message.media_group_id
+
+    user_data[user_id]["media"].append(message)
+
+# =========================
+# 📝 ТЕКСТ → ПУБЛИКАЦИЯ
+# =========================
+
+@dp.message_handler(content_types=['text'])
+async def handle_text(message: types.Message):
+    user_id = message.from_user.id
+
+    if user_id not in user_data or not user_data[user_id]["media"]:
         return
 
-    # бренд
-    brand = next((b for b in BRANDS if b in text), "PIKANTO")
+    media_messages = user_data[user_id]["media"]
+    caption = build_caption(message.text)
 
-    # категория
-    category = next((c for c in CATEGORIES if c in text), "STYLE")
+    # --- одно медиа
+    if len(media_messages) == 1:
+        msg = media_messages[0]
 
-    # ===== РАЗМЕРЫ =====
-    sizes_match = re.findall(r"(XS|S|M|L|XL|\b\d{2,3}\b)", text)
-
-    sizes_text = ""
-    if sizes_match:
-        sizes_text = "📏 Размеры: " + " ".join(sorted(set(sizes_match)))
-
-    # ===== ЦЕНА =====
-    price_match = re.search(r"\d+\s?€", text)
-
-    if price_match:
-        price = price_match.group().replace(" ", "")
-        price_text = f"{price} -40%"
-    else:
-        price_text = ""
-
-    # ===== ФИНАЛЬНЫЙ ТЕКСТ =====
-    final_text = f"{brand}\n{category}\n"
-
-    if sizes_text:
-        final_text += f"{sizes_text}\n\n"
-
-    if price_text:
-        final_text += f"{price_text}\n"
-
-    final_text += "\n📱 Заказать:\nhttps://wa.me/393516282355"
-
-    # защита лимита
-    final_text = final_text[:1000]
-
-    try:
-        # 🔥 ВИДЕО
-        if data.get("video"):
-            context.bot.send_video(
-                chat_id=CHANNEL_ID,
-                video=data["video"],
-                caption=final_text
+        if msg.photo:
+            await bot.send_photo(
+                CHANNEL_ID,
+                photo=msg.photo[-1].file_id,
+                caption=caption
             )
 
-        # 📸 ФОТО
-        elif data.get("photos") and len(data["photos"]) > 0:
-            media = []
+        elif msg.video:
+            await bot.send_video(
+                CHANNEL_ID,
+                video=msg.video.file_id,
+                caption=caption
+            )
 
-            for i, photo in enumerate(data["photos"][:10]):
-                if i == 0:
-                    media.append(InputMediaPhoto(media=photo, caption=final_text))
-                else:
-                    media.append(InputMediaPhoto(media=photo))
+    # --- альбом
+    else:
+        media_group = []
 
-            context.bot.send_media_group(chat_id=CHANNEL_ID, media=media)
+        for i, msg in enumerate(media_messages):
+            if msg.photo:
+                item = types.InputMediaPhoto(
+                    media=msg.photo[-1].file_id
+                )
+            elif msg.video:
+                item = types.InputMediaVideo(
+                    media=msg.video.file_id
+                )
+            else:
+                continue
 
-        else:
-            print("❌ НЕТ КОНТЕНТА")
+            if i == 0:
+                item.caption = caption
 
-    except Exception as e:
-        print("ERROR:", e)
+            media_group.append(item)
+
+        await bot.send_media_group(CHANNEL_ID, media_group)
 
     # очистка
-    user_data_store[user_id] = {"photos": [], "video": None}
+    user_data[user_id] = {"media": [], "media_group_id": None}
 
-# ===== ЗАПУСК =====
-updater = Updater(TOKEN)
-dp = updater.dispatcher
+# =========================
 
-dp.add_handler(CommandHandler("start", start))
-dp.add_handler(MessageHandler(Filters.photo | Filters.video, handle_media))
-dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_text))
-
-updater.start_polling()
-updater.idle()
+if __name__ == "__main__":
+    executor.start_polling(dp, skip_updates=True)
