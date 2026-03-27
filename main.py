@@ -1,158 +1,113 @@
 import os
 import re
-import time
-from collections import deque
-
-from telegram import Update
+from telegram import Update, InputMediaPhoto
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
 TOKEN = os.getenv("BOT_TOKEN")
-
-# 👉 ВСТАВЬ СЮДА ID КАНАЛА
 CHANNEL_ID = "@brandpils"
 
-
-# ====== СПИСОК БРЕНДОВ ======
+# ===== БРЕНДЫ =====
 BRANDS = [
-    "VIVETTA","MSGM","N21","GCDS","ICEBERG","ICE PLAY","DSQUARED2",
-    "PHILIPP PLEIN","PLEIN SPORT","JOHN RICHMOND","RICHMOND X",
-    "LOVE MOSCHINO","MOSCHINO","KARL LAGERFELD","MAX MARA",
-    "MAX MARA STUDIO","MAX MARA LEISURE","WEEKEND MAX MARA",
-    "MARELLA","EMME MARELLA","IBLUES","LIU JO","LIU JO SPORT",
-    "LIU JO BEACHWEAR","LIU JO JEANS","PINKO","PATRIZIA PEPE",
-    "TWINSET","ELISABETTA FRANCHI","GAELLE","IMPERIAL","ANIYE BY",
-    "ESSENTIEL ANTWERP","ESSENTIEL","PLEASE","SILVIAN HEACH",
-    "ODI ET AMO","RELISH","VICOLO","RINASCIMENTO","DENNY ROSE",
-    "FRACOMINA","GUESS","GUESS BY MARCIANO","ARMANI EXCHANGE",
-    "EA7","EMPORIO ARMANI","VERSACE JEANS COUTURE","CAVALLI CLASS",
-    "ROBERTO CAVALLI","JUST CAVALLI","TRUSSARDI","FURLA","COCCINELLE",
-    "POLLINI","ALVIERO MARTINI","1A CLASSE","THEMOIRÈ","LA MILANESA",
-    "VEE COLLECTIVE","GIANNI CHIARINI","CULTI MILANO","FABIANA FILIPPI",
-    "FALERIO SARTI","ERMANNO SCERVINO","ERMANNO FIRENZE",
-    "ERMANNO SCERVINO LIFE","BLANCHA","DE SIENA","AIM",
-    "AVENUE 67 MILANO","COUNTY OF MILAN","D'EXTERIOR",
-    "GIUSEPPE DI MORABITO","JACOB COHEN","SHAFT JEANS",
-    "ICEBERG JEANS","PAPERLACE","POEVE","SEVENTY","THE ANTIPODE",
-    "NATASHA ZINKO","PERSONA BY MARINA RINALDI","MM"
+    "VIVETTA","MSGM","N21","GCDS",
+    "ICEBERG","ICE PLAY","DSQUARED2",
+    "JOHN RICHMOND","LOVE MOSCHINO",
+    "KARL LAGERFELD","MAX MARA","WEEKEND",
+    "MARELLA","EMME MARELLA","IBLUES",
+    "LIU JO","PINKO","TWINSET",
+    "ELISABETTA FRANCHI","GAELLE",
+    "ESSENTIEL","PLEASE","RELISH",
+    "VICOLO","RINASCIMENTO"
 ]
 
+# ===== КАТЕГОРИИ =====
+CATEGORIES = [
+    "ПАЛЬТО","КУРТКА","ПЛАТЬЕ","ЮБКА",
+    "БРЮКИ","ДЖИНСЫ","КОСТЮМ",
+    "СВИТЕР","ФУТБОЛКА",
+    "ОБУВЬ","БАЛЕТКИ","ТУФЛИ","КРОССОВКИ",
+    "СУМКА"
+]
 
-# ====== КАТЕГОРИИ ======
-CATEGORIES = {
-    "ПАЛЬТО": ["пальто","coat"],
-    "КУРТКА": ["куртка","jacket"],
-    "ПЛАТЬЕ": ["платье","dress"],
-    "ЮБКА": ["юбка","skirt"],
-    "БРЮКИ": ["брюки","pants"],
-    "ДЖИНСЫ": ["джинсы","jeans"],
-    "КОФТА": ["кофта","sweater","maglia"],
-    "СУМКА": ["сумка","bag"],
-    "ОБУВЬ": ["обувь","scarpe","shoes"],
-    "АКСЕССУАР": ["accessori","аксессуар"]
-}
+# ===== ПАМЯТЬ =====
+user_data_store = {}
 
-
-# ====== ОЧЕРЕДЬ ======
-queue = deque()
-
-
-# ====== ПОИСК БРЕНДА ======
-def detect_brand(text):
-    text_upper = text.upper()
-    for brand in BRANDS:
-        if brand in text_upper:
-            return brand
-    return "PIKANTO"
-
-
-# ====== ПОИСК КАТЕГОРИИ ======
-def detect_category(text):
-    text_lower = text.lower()
-    for cat, words in CATEGORIES.items():
-        for w in words:
-            if w in text_lower:
-                return cat
-    return "STYLE"
-
-
-# ====== ПОИСК ЦЕНЫ ======
-def detect_price(text):
-    price = re.search(r"\d+\s?€|\€\s?\d+", text)
-    discount = re.search(r"-\s?\d+%", text)
-
-    price_str = price.group(0).replace(" ", "") if price else ""
-    discount_str = discount.group(0).replace(" ", "") if discount else ""
-
-    return f"{price_str} {discount_str}".strip()
-
-
-# ====== ФОРМИРОВАНИЕ ТЕКСТА ======
-def format_caption(text):
-    brand = detect_brand(text)
-    category = detect_category(text)
-    price = detect_price(text)
-
-    caption = f"{brand}\n{category}\n{price}\n\n#{category} #{brand}\n\n📲 Заказать: https://wa.me/393516282355"
-    return caption
-
-
-# ====== /start ======
 def start(update: Update, context: CallbackContext):
     update.message.reply_text("PIKANTO bot работает 🔥")
 
+# ===== СОХРАНЯЕМ МЕДИА =====
+def handle_media(update: Update, context: CallbackContext):
+    user_id = update.message.from_user.id
 
-# ====== ПРИЁМ СООБЩЕНИЙ ======
-def handle_message(update: Update, context: CallbackContext):
-    message = update.message
+    if user_id not in user_data_store:
+        user_data_store[user_id] = {"photos": [], "video": None}
 
-    if not message:
+    if update.message.video:
+        user_data_store[user_id]["video"] = update.message.video.file_id
+
+    if update.message.photo:
+        user_data_store[user_id]["photos"].append(update.message.photo[-1].file_id)
+
+# ===== ОБРАБОТКА ТЕКСТА =====
+def handle_text(update: Update, context: CallbackContext):
+    user_id = update.message.from_user.id
+    text = update.message.text.upper()
+
+    data = user_data_store.get(user_id)
+
+    if not data:
         return
 
-    text = message.caption if message.caption else message.text if message.text else ""
+    # бренд
+    brand = next((b for b in BRANDS if b in text), "PIKANTO")
 
-    caption = format_caption(text)
+    # категория
+    category = next((c for c in CATEGORIES if c in text), "STYLE")
 
-    item = {
-        "photo": message.photo[-1].file_id if message.photo else None,
-        "text": caption
-    }
+    # цена
+    price_match = re.search(r"\d+\s?€", text)
 
-    queue.append(item)
-
-
-# ====== ОТПРАВКА КАЖДЫЕ 5 МИН ======
-def process_queue(context: CallbackContext):
-    if not queue:
-        return
-
-    item = queue.popleft()
-
-    if item["photo"]:
-        context.bot.send_photo(
-            chat_id=CHANNEL_ID,
-            photo=item["photo"],
-            caption=item["text"]
-        )
+    if price_match:
+        price = price_match.group().replace(" ", "")
+        price_text = f"{price} -40%"
     else:
-        context.bot.send_message(
-            chat_id=CHANNEL_ID,
-            text=item["text"]
-        )
+        price_text = ""
 
+    final_text = f"{brand}\n{category}\n{price_text}\n\n📲 Заказать: https://wa.me/393516282355"
 
-# ====== ЗАПУСК ======
-def main():
-    updater = Updater(TOKEN)
-    dp = updater.dispatcher
+    try:
+        # 🔥 ПРИОРИТЕТ ВИДЕО
+        if data["video"]:
+            context.bot.send_video(
+                chat_id=CHANNEL_ID,
+                video=data["video"],
+                caption=final_text
+            )
 
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(Filters.all, handle_message))
+        # 📸 ИНАЧЕ ФОТО АЛЬБОМ
+        elif data["photos"]:
+            media = []
 
-    updater.job_queue.run_repeating(process_queue, interval=300, first=10)
+            for i, photo in enumerate(data["photos"][:10]):
+                if i == 0:
+                    media.append(InputMediaPhoto(media=photo, caption=final_text))
+                else:
+                    media.append(InputMediaPhoto(media=photo))
 
-    updater.start_polling()
-    updater.idle()
+            context.bot.send_media_group(chat_id=CHANNEL_ID, media=media)
 
+    except Exception as e:
+        print("ERROR:", e)
 
-if __name__ == "__main__":
-    main()
+    # очистка
+    user_data_store[user_id] = {"photos": [], "video": None}
+
+# ===== ЗАПУСК =====
+updater = Updater(TOKEN)
+dp = updater.dispatcher
+
+dp.add_handler(CommandHandler("start", start))
+dp.add_handler(MessageHandler(Filters.photo | Filters.video, handle_media))
+dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_text))
+
+updater.start_polling()
+updater.idle()
