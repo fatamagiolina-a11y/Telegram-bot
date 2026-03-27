@@ -41,11 +41,14 @@ def handle_media(update: Update, context: CallbackContext):
     if user_id not in user_data_store:
         user_data_store[user_id] = {"photos": [], "video": None}
 
+    # 🎥 видео
     if update.message.video:
         user_data_store[user_id]["video"] = update.message.video.file_id
 
+    # 📸 фото (ВАЖНО: file_id)
     if update.message.photo:
-        user_data_store[user_id]["photos"].append(update.message.photo[-1].file_id)
+        photo = update.message.photo[-1].file_id
+        user_data_store[user_id]["photos"].append(photo)
 
 # ===== ОБРАБОТКА ТЕКСТА =====
 def handle_text(update: Update, context: CallbackContext):
@@ -64,14 +67,13 @@ def handle_text(update: Update, context: CallbackContext):
     category = next((c for c in CATEGORIES if c in text), "STYLE")
 
     # ===== РАЗМЕРЫ =====
-sizes_match = re.findall(r"\b\d{2,3}\b", text)
+    sizes_match = re.findall(r"(XS|S|M|L|XL|\b\d{2,3}\b)", text)
 
-sizes_text = ""
-if sizes_match:
-    sizes_text = " ".join(sizes_match)
-    
+    sizes_text = ""
+    if sizes_match:
+        sizes_text = "📏 Размеры: " + " ".join(sorted(set(sizes_match)))
 
-    # цена
+    # ===== ЦЕНА =====
     price_match = re.search(r"\d+\s?€", text)
 
     if price_match:
@@ -80,38 +82,46 @@ if sizes_match:
     else:
         price_text = ""
 
+    # ===== ФИНАЛЬНЫЙ ТЕКСТ =====
     final_text = f"{brand}\n{category}\n"
 
-if sizes_text:
-    final_text += f"{sizes_text}\n"
+    if sizes_text:
+        final_text += f"{sizes_text}\n\n"
 
-if price_text:
-    final_text += f"{price_text}\n"
+    if price_text:
+        final_text += f"{price_text}\n"
 
-final_text += "\n📲 Заказать: https://wa.me/393516282355"
-try:
-    # 🔥 ПРИОРИТЕТ ВИДЕО
-    if data["video"]:
-        context.bot.send_video(
-            chat_id=CHANNEL_ID,
-            video=data["video"],
-            caption=final_text
-        )
+    final_text += "\n📱 Заказать:\nhttps://wa.me/393516282355"
 
-    # 📸 ИНАЧЕ ФОТО АЛЬБОМ
-    elif data["photos"]:
-        media = []
+    # защита лимита
+    final_text = final_text[:1000]
 
-        for i, photo in enumerate(data["photos"][:10]):
-            if i == 0:
-                media.append(InputMediaPhoto(media=photo, caption=final_text))
-            else:
-                media.append(InputMediaPhoto(media=photo))
+    try:
+        # 🔥 ВИДЕО
+        if data.get("video"):
+            context.bot.send_video(
+                chat_id=CHANNEL_ID,
+                video=data["video"],
+                caption=final_text
+            )
 
-        context.bot.send_media_group(chat_id=CHANNEL_ID, media=media)
+        # 📸 ФОТО
+        elif data.get("photos") and len(data["photos"]) > 0:
+            media = []
 
-except Exception as e:
-    print("ERROR:", e)
+            for i, photo in enumerate(data["photos"][:10]):
+                if i == 0:
+                    media.append(InputMediaPhoto(media=photo, caption=final_text))
+                else:
+                    media.append(InputMediaPhoto(media=photo))
+
+            context.bot.send_media_group(chat_id=CHANNEL_ID, media=media)
+
+        else:
+            print("❌ НЕТ КОНТЕНТА")
+
+    except Exception as e:
+        print("ERROR:", e)
 
     # очистка
     user_data_store[user_id] = {"photos": [], "video": None}
