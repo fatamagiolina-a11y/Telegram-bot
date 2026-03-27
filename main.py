@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
 # 🔐 ВСТАВЬ СЮДА СВОЙ ТОКЕН
-TOKEN = "8659770527:AAH4cb-P-Trqxc6IjTDVJHGEX-ZP2K6Lfio"
+TOKEN = "8659770527:AAEvO0PsPMPOwDvZA0G6d5TX2XdqmdK8cDU"
 
 # ❤️ ТВОЙ TELEGRAM ID
 TARGET_CHAT_ID = 1666542263
