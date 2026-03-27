@@ -63,6 +63,14 @@ def handle_text(update: Update, context: CallbackContext):
     # категория
     category = next((c for c in CATEGORIES if c in text), "STYLE")
 
+    # ===== РАЗМЕРЫ =====
+sizes_match = re.findall(r"\b\d{2,3}\b", text)
+
+sizes_text = ""
+if sizes_match:
+    sizes_text = " ".join(sizes_match)
+    
+
     # цена
     price_match = re.search(r"\d+\s?€", text)
 
@@ -72,7 +80,15 @@ def handle_text(update: Update, context: CallbackContext):
     else:
         price_text = ""
 
-    final_text = f"{brand}\n{category}\n{price_text}\n\n📲 Заказать: https://wa.me/393516282355"
+    final_text = f"{brand}\n{category}\n"
+
+if sizes_text:
+    final_text += f"{sizes_text}\n"
+
+if price_text:
+    final_text += f"{price_text}\n"
+
+final_text += "\n📲 Заказать: https://wa.me/393516282355"
 
     try:
         # 🔥 ПРИОРИТЕТ ВИДЕО
