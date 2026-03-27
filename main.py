@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
 # 🔐 ВСТАВЬ СЮДА СВОЙ ТОКЕН
-TOKEN = os.getenv ("BOT_TOKEN")
+TOKEN = os.getenv("BOT_TOKEN")
 
 # ❤️ ТВОЙ TELEGRAM ID
 TARGET_CHAT_ID = 1666542263
