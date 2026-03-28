@@ -14,9 +14,8 @@ dp = Dispatcher(bot)
 @dp.message_handler(content_types=["photo", "video", "text"])
 async def handle_post(message: types.Message):
 
-    text = message.caption if message.caption else message.text
-    if not text:
-        return
+    
+    text = message.caption or message.text or ""
 
     items = text.split("\n\n")
     final_text = ""
