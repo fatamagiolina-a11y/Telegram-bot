@@ -3,7 +3,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 
 API_TOKEN = "8659770527:AAHH5j7I5-QqwO8CvHZ6CgqqnMr5Kda-Prw"
-CHANNEL_ID = "@brandpils"
+CHANNEL_ID = "@brandpills"
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
@@ -25,27 +25,30 @@ async def handle_post(message: types.Message):
 
         for line in lines:
             line = line.strip()
-
             if not line:
                 continue
 
-            # размеры → сразу под товар
-            if re.search(r'\b(S|M|L)\b', line) or re.search(r'\b\d{2}(\.\d{2})+\b', line):
+            # 🔹 РАЗМЕРЫ (умные)
+            if re.search(r'(размер\s*\d+)', line.lower()) or \
+               re.fullmatch(r'\d{2}', line) or \
+               re.search(r'\b(S|M|L|XL)\b', line):
                 item_text += "📏 Размеры: " + line + "\n"
                 continue
 
-            # цена → добавляем скидку
-            if re.fullmatch(r'\d+', line):
-                line = line + " 💸 -40%"
+            # 🔹 ЦЕНА (умная)
+            if re.search(r'\d+', line):
+                clean_price = re.sub(r'[^\d]', '', line)
+                if clean_price:
+                    line = f"💸 {clean_price}€  (-40%)"
 
             item_text += line + "\n"
 
         final_text += item_text + "\n"
 
-    # ссылка в конце
+    # 🔹 ссылка
     final_text += "📲 Заказать: https://wa.me/393516282355"
 
-    # отправка
+    # 🔹 отправка
     if message.video:
         await bot.send_video(
             CHANNEL_ID,
