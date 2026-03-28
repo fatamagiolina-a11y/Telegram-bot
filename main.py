@@ -20,42 +20,25 @@ async def handle_post(message: types.Message):
     final_text = ""
 
     for item in items:
-        
         item_text = ""
-
         lines = item.split("\n")
 
-          for line in lines:
-              line = line.strip()
-              if not line:
-                  continue
+        for line in lines:
+            line = line.strip()
 
-              # размеры → сразу под товар
-              if re.search(r'\b(S|M|L)\b', line) or re.search(r'\b\d{2}(\.\d{2})+\b', line):
-                  item_text += "📏 Размеры: " + line + "\n"
-                  continue
+            if not line:
+                continue
 
-              # цена → добавляем скидку
-              if re.fullmatch(r'\d+', line):
-                  line = line + " 💸 -40%"
+            # размеры → сразу под товар
+            if re.search(r'\b(S|M|L)\b', line) or re.search(r'\b\d{2}(\.\d{2})+\b', line):
+                item_text += "📏 Размеры: " + line + "\n"
+                continue
 
-              item_text += line + "\n"  
-            
-            
-        
+            # цена → добавляем скидку
+            if re.fullmatch(r'\d+', line):
+                line = line + " 💸 -40%"
 
-            
-    
-
-
-
-                
-
-        
-        
-            
-            
-            
+            item_text += line + "\n"
 
         final_text += item_text + "\n"
 
