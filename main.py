@@ -20,31 +20,42 @@ async def handle_post(message: types.Message):
     final_text = ""
 
     for item in items:
-        sizes = []
+        
         item_text = ""
 
         lines = item.split("\n")
 
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
+      for line in lines:
+    line = line.strip()
+    if not line:
+        continue
 
-            # ищем размеры
-            found = re.findall(r'\b\d{2}\b|S|M|L', line)
-            sizes.extend(found)
+    # размеры → сразу под товар
+    if re.search(r'\b(S|M|L)\b', line) or re.search(r'\b\d{2}(\.\d{2})+\b', line):
+        item_text += "📏 Размеры: " + line + "\n"
+        continue
 
-            item_text += line + "\n"
+    # цена → добавляем скидку
+    if re.fullmatch(r'\d+', line):
+        line = line + " 💸 -40%"
 
-            # 💸 если это строка с ценой (есть число, но нет размеров)
-            if re.search(r'\d+', line) and not re.search(r'\b(S|M|L)\b', line):
-                item_text += "💸 -40%\n"
+    item_text += line + "\n"  
+            
+            
+        
 
-        # добавляем размеры в конце товара
-        if sizes:
-            # убираем дубли
-            sizes = list(dict.fromkeys(sizes))
-            item_text += "📏 Размеры: " + " ".join(sizes) + "\n"
+            
+    
+
+
+
+                
+
+        
+        
+            
+            
+            
 
         final_text += item_text + "\n"
 
