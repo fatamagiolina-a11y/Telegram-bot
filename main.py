@@ -76,9 +76,7 @@ async def handle_post(message: types.Message):
         print("ERROR:", e)
 
 
-if __name__ == "__main__":
-    except Exception as e:
-    print("ERROR:", e)
+
 
 
 if __name__ == "__main__":
