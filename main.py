@@ -3,9 +3,8 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 
 API_TOKEN = "8659770527:AAH_yO2OqmlZuiucOqwHClMuidGhUvuolps"
-
-
 CHANNEL_ID = "@brandpills"
+USER_ID = 1666542263  # ← вставь свой ID
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
@@ -14,7 +13,10 @@ dp = Dispatcher(bot)
 @dp.message_handler(content_types=["photo", "video", "text"])
 async def handle_post(message: types.Message):
 
-    
+    # 🔒 принимаем только от тебя
+    if message.from_user.id != USER_ID:
+        return
+
     text = message.caption or message.text or ""
 
     items = text.split("\n\n")
@@ -29,14 +31,14 @@ async def handle_post(message: types.Message):
             if not line:
                 continue
 
-            # 🔹 РАЗМЕРЫ (умные)
-            if re.search(r'(размер\s*\d+)', line.lower()) or \
-               re.fullmatch(r'\d{2}', line) or \
+            # 📏 Размеры
+            if re.search(r'(размер)', line.lower()) or \
+               re.search(r'\d{2}\.\d{2}', line) or \
                re.search(r'\b(S|M|L|XL)\b', line):
                 item_text += "📏 Размеры: " + line + "\n"
                 continue
 
-            # 🔹 ЦЕНА (умная)
+            # 💸 Цена
             if re.search(r'\d+', line):
                 clean_price = re.sub(r'[^\d]', '', line)
                 if clean_price:
@@ -46,29 +48,32 @@ async def handle_post(message: types.Message):
 
         final_text += item_text + "\n"
 
-    # 🔹 ссылка
     final_text += "📲 Заказать: https://wa.me/393516282355"
 
-    # 🔹 отправка
-    if message.video:
-        await bot.send_video(
-            CHANNEL_ID,
-            message.video.file_id,
-            caption=final_text
-        )
+    # 🚀 отправка
+    try:
+        if message.video:
+            await bot.send_video(
+                CHANNEL_ID,
+                message.video.file_id,
+                caption=final_text
+            )
 
-    elif message.photo:
-        await bot.send_photo(
-            CHANNEL_ID,
-            message.photo[-1].file_id,
-            caption=final_text
-        )
+        elif message.photo:
+            await bot.send_photo(
+                CHANNEL_ID,
+                message.photo[-1].file_id,
+                caption=final_text
+            )
 
-    else:
-        await bot.send_message(
-            CHANNEL_ID,
-            final_text
-        )
+        else:
+            await bot.send_message(
+                CHANNEL_ID,
+                final_text
+            )
+
+    except Exception as e:
+        print("ERROR:", e)
 
 
 if __name__ == "__main__":
