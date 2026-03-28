@@ -77,4 +77,15 @@ async def handle_post(message: types.Message):
 
 
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
+    except Exception as e:
+    print("ERROR:", e)
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    async def main():
+        await bot.delete_webhook(drop_pending_updates=True)
+        await dp.start_polling()
+
+    asyncio.run(main())
