@@ -2,7 +2,9 @@ import re
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 
-API_TOKEN = "8659770527:AAHH5j7I5-QqwO8CvHZ6CgqqnMr5Kda-Prw"
+API_TOKEN = "8659770527:AAH_yO2OqmlZuiucOqwHClMuidGhUvuolps"
+
+
 CHANNEL_ID = "@brandpills"
 
 bot = Bot(token=API_TOKEN)
