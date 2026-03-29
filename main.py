@@ -16,8 +16,8 @@ async def start_cmd(message: types.Message):
 async def handle_post(message: types.Message):
 
     # 🔒 принимаем только от тебя
-    if message.from_user.id != USER_ID:
-        return
+   # if message.from_user.id != USER_ID:
+   #     return
 
     text = message.caption or message.text or ""
 
