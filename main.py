@@ -1,23 +1,40 @@
 import re
+import os
+import asyncio
 from aiogram import Bot, Dispatcher, types
-from aiogram.utils import executor
 
-API_TOKEN = "8659770527:AAFU1T-Po7nziaK16hiNPIHFIKgwdl9lC4w"
+# 🔐 токен (Railway + запасной вариант)
+API_TOKEN = os.getenv("BOT_TOKEN") or "8659770527:AAFU1T-Po7nziaK16hiNPIHFIKgwdl9lC4w"
+
+if not API_TOKEN:
+    raise ValueError("Нет токена!")
+
 CHANNEL_ID = "@brandpils"
-USER_ID = 1666542263  # ← вставь свой ID
+
+# 👤 разрешённые пользователи (3 аккаунта)
+ALLOWED_USERS = [
+    1666542263,   # твой основной (оставь свой)
+    1637194418,
+    2028499794
+]
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
+
+
+# ▶️ команда старт
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
     await message.answer("Бот работает ✅ Отправь фото или видео")
 
+
+# 🚀 основной обработчик
 @dp.message_handler(content_types=["photo", "video", "text"])
 async def handle_post(message: types.Message):
 
-    # 🔒 принимаем только от тебя
-   # if message.from_user.id != USER_ID:
-   #     return
+    # 🔒 проверка доступа
+    if message.from_user.id not in ALLOWED_USERS:
+        return
 
     text = message.caption or message.text or ""
 
@@ -33,18 +50,16 @@ async def handle_post(message: types.Message):
             if not line:
                 continue
 
-            # 📏 Размеры
-            if re.search(r'(размер)', line.lower()) or \
-               re.search(r'\d{2}\.\d{2}', line) or \
-               re.search(r'\b(S|M|L|XL)\b', line):
+            # 📏 размеры (без дублей)
+            if re.search(r'\b(S|M|L|XL)\b', line) or re.search(r'\d{2}\.\d{2}', line):
                 item_text += "📏 Размеры: " + line + "\n"
                 continue
 
-            # 💸 Цена
+            # 💸 цена
             if re.search(r'\d+', line):
                 clean_price = re.sub(r'[^\d]', '', line)
                 if clean_price:
-                    line = f"💸 {clean_price}€  (-40%)"
+                    line = f"💸 {clean_price}€ (-40%)"
 
             item_text += line + "\n"
 
@@ -52,7 +67,6 @@ async def handle_post(message: types.Message):
 
     final_text += "📲 Заказать: https://wa.me/393516282355"
 
-    # 🚀 отправка
     try:
         if message.video:
             await bot.send_video(
@@ -78,12 +92,7 @@ async def handle_post(message: types.Message):
         print("ERROR:", e)
 
 
-
-
-
 if __name__ == "__main__":
-    import asyncio
-
     async def main():
         await bot.delete_webhook(drop_pending_updates=True)
         await dp.start_polling()
