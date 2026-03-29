@@ -117,7 +117,7 @@ async def handle_album(message: types.Message):
     media_groups[group_id].append(message)
 
     # ждём все фото
-    await asyncio.sleep(1.5)
+    await asyncio.sleep(3)
 
     # если уже обработали
     if group_id not in media_groups:
