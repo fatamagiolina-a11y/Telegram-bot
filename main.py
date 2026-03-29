@@ -95,7 +95,7 @@ from aiogram.types import MediaGroup
 media_groups = {}
 
 
-@dp.message_handler(content_types=["photo"], is_media_group=True)
+@dp.message_handler(content_types=["photo"])
 async def handle_album(message: types.Message):
 
     if message.from_user.id not in ALLOWED_USERS:
