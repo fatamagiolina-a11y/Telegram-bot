@@ -8,7 +8,9 @@ USER_ID = 1666542263  # ← вставь свой ID
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
-
+@dp.message_handler(commands=["start"])
+async def start_cmd(message: types.Message):
+    await message.answer("Бот работает ✅ Отправь фото или видео")
 
 @dp.message_handler(content_types=["photo", "video", "text"])
 async def handle_post(message: types.Message):
