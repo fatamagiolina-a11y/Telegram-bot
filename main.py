@@ -90,7 +90,43 @@ async def handle_post(message: types.Message):
 
     except Exception as e:
         print("ERROR:", e)
+from aiogram.types import MediaGroup
 
+media_groups = {}
+
+
+@dp.message_handler(content_types=["photo"], is_media_group=True)
+async def handle_album(message: types.Message):
+
+    if message.from_user.id not in ALLOWED_USERS:
+        return
+
+    group_id = message.media_group_id
+
+    if group_id not in media_groups:
+        media_groups[group_id] = []
+
+    media_groups[group_id].append(message)
+
+    await asyncio.sleep(1)
+
+    if len(media_groups[group_id]) == 1:
+        return
+
+    messages = media_groups[group_id]
+    media = []
+
+    text = messages[0].caption or ""
+
+    for i, msg in enumerate(messages):
+        if i == 0:
+            media.append(types.InputMediaPhoto(media=msg.photo[-1].file_id, caption=text))
+        else:
+            media.append(types.InputMediaPhoto(media=msg.photo[-1].file_id))
+
+    await bot.send_media_group(CHANNEL_ID, media)
+
+    del media_groups[group_id]
 
 if __name__ == "__main__":
     async def main():
