@@ -90,15 +90,16 @@ async def handle_post(message: types.Message):
 
     except Exception as e:
         print("ERROR:", e)
-from aiogram.types import MediaGroup
-
 media_groups = {}
-
 
 @dp.message_handler(content_types=["photo"])
 async def handle_album(message: types.Message):
 
     if message.from_user.id not in ALLOWED_USERS:
+        return
+
+    # если это НЕ альбом → пропускаем
+    if not message.media_group_id:
         return
 
     group_id = message.media_group_id
@@ -108,25 +109,39 @@ async def handle_album(message: types.Message):
 
     media_groups[group_id].append(message)
 
-    await asyncio.sleep(1)
+    # ждём пока все фото придут
+    await asyncio.sleep(1.5)
 
-    if len(media_groups[group_id]) == 1:
+    # если уже обработали — выходим
+    if group_id not in media_groups:
         return
 
     messages = media_groups[group_id]
-    media = []
 
+    # если одно фото — не альбом
+    if len(messages) < 2:
+        return
+
+    media = []
     text = messages[0].caption or ""
 
     for i, msg in enumerate(messages):
         if i == 0:
-            media.append(types.InputMediaPhoto(media=msg.photo[-1].file_id, caption=text))
+            media.append(types.InputMediaPhoto(
+                media=msg.photo[-1].file_id,
+                caption=text
+            ))
         else:
-            media.append(types.InputMediaPhoto(media=msg.photo[-1].file_id))
+            media.append(types.InputMediaPhoto(
+                media=msg.photo[-1].file_id
+            ))
 
     await bot.send_media_group(CHANNEL_ID, media)
 
     del media_groups[group_id]
+
+
+
 
 if __name__ == "__main__":
     async def main():
