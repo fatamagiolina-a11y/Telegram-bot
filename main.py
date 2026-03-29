@@ -2,7 +2,7 @@ import re
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 
-API_TOKEN = "8659770527:AAH_yO2OqmlZuiucOqwHClMuidGhUvuolps"
+API_TOKEN = ""
 CHANNEL_ID = "@brandpils"
 USER_ID = 1666542263  # ← вставь свой ID
 
