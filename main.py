@@ -75,12 +75,12 @@ async def handle_post(message: types.Message):
                 caption=final_text
             )
 
-        elif message.photo:
-            await bot.send_photo(
-                CHANNEL_ID,
-                message.photo[-1].file_id,
-                caption=final_text
-            )
+        #elif message.photo:
+        #    await bot.send_photo(
+        #        CHANNEL_ID,
+        #        message.photo[-1].file_id,
+        #        caption=final_text
+        #    )
 
         else:
             await bot.send_message(
