@@ -87,36 +87,35 @@ async def handle_post(message: types.Message):
     except Exception as e:
         print("ERROR:", e)
 
-@dp.message_handler(content_types=["photo"],)
+@dp.message_handler(content_types=["photo"])
 async def handle_album(message: types.Message):
 
     if message.from_user.id not in ALLOWED_USERS:
         return
 
+    # если нет альбома → не трогаем
     if not message.media_group_id:
-        # это одиночное фото → пропускаем (его обработает handle_post)
         return
-        
 
     group_id = message.media_group_id
 
-    if group_id not in media_groups:
-        media_groups[group_id] = []
+    # если уже обрабатывается — просто добавляем и выходим
+    if group_id in media_groups:
+        media_groups[group_id].append(message)
+        return
 
-    media_groups[group_id].append(message)
+    # если первый раз — создаём группу
+    media_groups[group_id] = [message]
 
+    # ждём пока Telegram пришлёт все фото
     await asyncio.sleep(2)
 
     messages = media_groups.get(group_id)
 
-    if not messages:
+    if not messages or len(messages) < 2:
+        if group_id in media_groups:
+            del media_groups[group_id]
         return
-
-    if len(messages) < 2:
-        return
-
-    
-
 
     media = []
     text = messages[0].caption or ""
@@ -136,7 +135,6 @@ async def handle_album(message: types.Message):
     await bot.send_media_group(CHANNEL_ID, media)
 
     del media_groups[group_id]
-
 if __name__ == "__main__":
     async def main():
         await bot.delete_webhook(drop_pending_updates=True)
