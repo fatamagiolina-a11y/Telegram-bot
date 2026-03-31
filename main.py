@@ -57,8 +57,8 @@ async def handle_post(message: types.Message):
     if message.from_user.id not in ALLOWED_USERS:
         return
 
-    if message.media_group_id:
-        return
+    
+        
 
     text = message.caption or message.text or ""
     final_text = process_text(text)
@@ -89,50 +89,10 @@ async def handle_post(message: types.Message):
 
 
 
-    @dp.message_handler(content_types=["photo", "video", "text"])
-async def handle_post(message: types.Message):
-
-    if message.from_user.id not in ALLOWED_USERS:
-        return
-
-    # если это альбом
-    if message.media_group_id:
-        group_id = message.media_group_id
-
-        if group_id not in media_groups:
-            media_groups[group_id] = []
-
-        media_groups[group_id].append(message)
-
-        await asyncio.sleep(2)
-
-        messages = media_groups.get(group_id)
-
-        if not messages or len(messages) < 2:
-            if group_id in media_groups:
-                del media_groups[group_id]
-            return
+    
             
 
-        media = []
-        text = messages[0].caption or ""
-        final_text = process_text(text)
-
-        for i, msg in enumerate(messages):
-            if i == 0:
-                media.append(types.InputMediaPhoto(
-                    media=msg.photo[-1].file_id,
-                    caption=final_text
-                ))
-            else:
-                media.append(types.InputMediaPhoto(
-                    media=msg.photo[-1].file_id
-                ))
-
-        await bot.send_media_group(CHANNEL_ID, media)
-
-        del media_groups[group_id]
-        return
+    
 
     # обычный пост
     text = message.caption or message.text or ""
