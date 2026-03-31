@@ -87,7 +87,7 @@ async def handle_post(message: types.Message):
     except Exception as e:
         print("ERROR:", e)
 
-@dp.message_handler(content_types=["photo"])
+@dp.message_handler(content_types=["photo"], is_media_group=True)
 async def handle_album(message: types.Message):
 
     if message.from_user.id not in ALLOWED_USERS:
