@@ -87,54 +87,80 @@ async def handle_post(message: types.Message):
     except Exception as e:
         print("ERROR:", e)
 
-@dp.message_handler(content_types=types.ContentType.PHOTO)
-async def handle_album(message: types.Message):
+
+
+    @dp.message_handler(content_types=["photo", "video", "text"])
+async def handle_post(message: types.Message):
 
     if message.from_user.id not in ALLOWED_USERS:
         return
 
-    # если нет альбома → не трогаем
-    if not message.media_group_id:
-        return
+    # если это альбом
+    if message.media_group_id:
+        group_id = message.media_group_id
 
-    group_id = message.media_group_id
+        if group_id not in media_groups:
+            media_groups[group_id] = []
 
-    # если уже обрабатывается — просто добавляем и выходим
-    if group_id in media_groups:
         media_groups[group_id].append(message)
+
+        await asyncio.sleep(2)
+
+        messages = media_groups.get(group_id)
+
+        if not messages or len(messages) < 2:
+            if group_id in media_groups:
+                del media_groups[group_id]
+            return
+            
+
+        media = []
+        text = messages[0].caption or ""
+        final_text = process_text(text)
+
+        for i, msg in enumerate(messages):
+            if i == 0:
+                media.append(types.InputMediaPhoto(
+                    media=msg.photo[-1].file_id,
+                    caption=final_text
+                ))
+            else:
+                media.append(types.InputMediaPhoto(
+                    media=msg.photo[-1].file_id
+                ))
+
+        await bot.send_media_group(CHANNEL_ID, media)
+
+        del media_groups[group_id]
         return
 
-    # если первый раз — создаём группу
-    media_groups[group_id] = [message]
-
-    # ждём пока Telegram пришлёт все фото
-    await asyncio.sleep(2)
-
-    messages = media_groups.get(group_id)
-
-    if not messages or len(messages) < 2:
-        if group_id in media_groups:
-            del media_groups[group_id]
-        return
-
-    media = []
-    text = messages[0].caption or ""
+    # обычный пост
+    text = message.caption or message.text or ""
     final_text = process_text(text)
 
-    for i, msg in enumerate(messages):
-        if i == 0:
-            media.append(types.InputMediaPhoto(
-                media=msg.photo[-1].file_id,
+    try:
+        if message.video:
+            await bot.send_video(
+                CHANNEL_ID,
+                message.video.file_id,
                 caption=final_text
-            ))
+            )
+
+        elif message.photo:
+            await bot.send_photo(
+                CHANNEL_ID,
+                message.photo[-1].file_id,
+                caption=final_text
+            )
+
         else:
-            media.append(types.InputMediaPhoto(
-                media=msg.photo[-1].file_id
-            ))
+            await bot.send_message(
+                CHANNEL_ID,
+                final_text
+            )
 
-    await bot.send_media_group(CHANNEL_ID, media)
-
-    del media_groups[group_id]
+    except Exception as e:
+        print("ERROR:", e)
 if __name__ == "__main__":
     async def main():
         await bot.delete_webhook(drop_pending_updates=True)
