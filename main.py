@@ -5,7 +5,6 @@ from aiogram import Bot, Dispatcher, types
 
 # 🔐 ТОКЕН (Railway или вручную)
 API_TOKEN = os.getenv("BOT_TOKEN") or "8659770527:AAFU1T-Po7nziaK16hiNPIHFIKgwdl9lC4w"
-
 if not API_TOKEN:
     raise ValueError("Нет токена!")
 
