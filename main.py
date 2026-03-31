@@ -87,14 +87,16 @@ async def handle_post(message: types.Message):
     except Exception as e:
         print("ERROR:", e)
 
-@dp.message_handler(content_types=["photo"], is_media_group=True)
+@dp.message_handler(content_types=["photo"],)
 async def handle_album(message: types.Message):
 
     if message.from_user.id not in ALLOWED_USERS:
         return
 
     if not message.media_group_id:
+        # это одиночное фото → пропускаем (его обработает handle_post)
         return
+        
 
     group_id = message.media_group_id
 
@@ -103,7 +105,7 @@ async def handle_album(message: types.Message):
 
     media_groups[group_id].append(message)
 
-    await asyncio.sleep(1.2)
+    await asyncio.sleep(2)
 
     messages = media_groups.get(group_id)
 
@@ -113,8 +115,8 @@ async def handle_album(message: types.Message):
     if len(messages) < 2:
         return
 
-    if message != messages[-1]:
-        return
+    
+
 
     media = []
     text = messages[0].caption or ""
