@@ -62,6 +62,7 @@ async def handle_post(message: types.Message):
     if message.media_group_id:
         group_id = message.media_group_id
 
+        # если уже обработан — выходим
         if group_id not in media_groups:
             media_groups[group_id] = []
 
@@ -71,12 +72,19 @@ async def handle_post(message: types.Message):
 
         messages = media_groups.get(group_id)
 
-        if not messages or len(messages) < 2:
+        # если уже удалили — не повторяем
+        if not messages:
+            return
+
+        if len(messages) < 2:
+            return
+
+        # 🔥 ОБРАБАТЫВАЕМ ТОЛЬКО 1 РАЗ
+        if message != messages[-1]:
             return
 
         media = []
 
-        # ищем текст в любом фото
         text = ""
         for msg in messages:
             if msg.caption:
@@ -98,7 +106,8 @@ async def handle_post(message: types.Message):
 
         await bot.send_media_group(CHANNEL_ID, media)
 
-        del media_groups[group_id]
+        # 🔥 удаляем безопасно
+        media_groups.pop(group_id, None)
         return
 
     # --- ОДИНОЧНЫЙ ПОСТ ---
