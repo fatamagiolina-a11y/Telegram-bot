@@ -166,4 +166,4 @@ if __name__ == "__main__":
         await bot.delete_webhook(drop_pending_updates=True)
         await dp.start_polling()
 
-    asyncio.run(main())
+        asyncio.run(main())
