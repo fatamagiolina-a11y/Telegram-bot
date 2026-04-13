@@ -11,7 +11,6 @@ ALLOWED_USERS = [1666542263, 1637194418, 2028499794]
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 
-# --- состояния ---
 media_groups = {}
 pending_posts = {}
 
@@ -33,7 +32,8 @@ def get_menu():
 
 # --- бренды ---
 KNOWN_BRANDS = [
-    "max mara", "pinko", "gucci", "prada", "n21", "zara", "dior"
+    "max mara", "ermanno scervino", "scervino",
+    "pinko", "gucci", "prada", "n21", "zara", "dior"
 ]
 
 
@@ -42,10 +42,13 @@ def detect_brand(text):
 
     for brand in KNOWN_BRANDS:
         if brand in text_lower:
-            return brand.replace(" ", "")
+            return brand.upper()
 
-    words = text.strip().split()
-    return words[0].lower() if words else None
+    for line in text.split("\n"):
+        if line.isupper() and len(line.split()) <= 3:
+            return line
+
+    return None
 
 
 # --- категории ---
@@ -58,7 +61,7 @@ def detect_category(text):
     if any(w in text for w in ["сумк","клатч"]):
         return "bag"
 
-    if any(w in text for w in ["плать","куртк","юбк","пиджак","жакет","поло"]):
+    if any(w in text for w in ["плать","куртк","юбк","пиджак","жакет","поло","рубаш"]):
         return "clothes"
 
     if any(w in text for w in ["ремень","платок","шарф","украш"]):
@@ -76,42 +79,67 @@ def is_price_line(line):
     return "€" in line or "eur" in line.lower() or "цена" in line.lower()
 
 
-# --- обработка текста ---
+# --- МУЛЬТИБРЕНД ОБРАБОТКА ---
 def process_text(text):
-    final = ""
 
-    brand = detect_brand(text)
-    category = detect_category(text)
+    blocks = []
+    current = []
 
     for line in text.split("\n"):
         line = line.strip()
         if not line:
             continue
 
-        # размеры (оставляем формат как есть)
-        if is_size_line(line):
-            final += "📏 Размеры: " + line + "\n"
-            continue
+        # новый товар = КАПС бренд
+        if line.isupper() and current:
+            blocks.append(current)
+            current = [line]
+        else:
+            current.append(line)
 
-        # цена
-        if is_price_line(line):
-            price = re.sub(r'[^\d]', '', line)
-            if price:
-                final += f"💰 {price}€ (-40%)\n"
+    if current:
+        blocks.append(current)
+
+    final = ""
+    hashtags = set()
+
+    for block in blocks:
+
+        block_text = "\n".join(block)
+
+        brand = detect_brand(block_text)
+        category = detect_category(block_text)
+
+        if brand:
+            final += f"{brand}\n"
+
+        for line in block:
+
+            if brand and line == brand:
                 continue
 
-        final += line + "\n"
+            if is_size_line(line):
+                final += "📏 Размеры: " + line + "\n"
+                continue
 
-    hashtags = []
+            if is_price_line(line):
+                price = re.sub(r'[^\d]', '', line)
+                if price:
+                    final += f"💰 {price}€ (-40%)\n"
+                    continue
 
-    if brand and brand not in ["и","на","с","в"]:
-        hashtags.append(f"#{brand}")
+            final += line + "\n"
 
-    if category:
-        hashtags.append(f"#{category}")
+        final += "\n"
+
+        if brand:
+            hashtags.add(f"#{brand.lower().replace(' ', '')}")
+
+        if category:
+            hashtags.add(f"#{category}")
 
     if hashtags:
-        final += "\n" + " ".join(hashtags)
+        final += " ".join(hashtags)
 
     return final
 
@@ -207,7 +235,7 @@ async def skip(message: types.Message):
         queue.pop(0)
 
 
-# --- основной обработчик ---
+# --- обработка ---
 @dp.message_handler(content_types=["photo","video","text"])
 async def handle_post(message: types.Message):
 
@@ -216,7 +244,7 @@ async def handle_post(message: types.Message):
 
     user_id = message.from_user.id
 
-    # --- альбом ---
+    # альбом
     if message.media_group_id:
         group_id = message.media_group_id
         media_groups.setdefault(group_id, []).append(message)
@@ -247,7 +275,7 @@ async def handle_post(message: types.Message):
         media_groups.pop(group_id, None)
         return
 
-    # --- фото / видео ---
+    # фото/видео
     if message.photo or message.video:
         text = message.caption or ""
 
@@ -286,7 +314,7 @@ async def handle_post(message: types.Message):
             pending_posts.pop(user_id, None)
         return
 
-    # --- текст ---
+    # текст
     if message.text:
         if user_id in pending_posts:
             msg = pending_posts[user_id]
