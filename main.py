@@ -11,17 +11,17 @@ ALLOWED_USERS = [1666542263, 1637194418, 2028499794]
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 
+# --- состояния ---
 media_groups = {}
 pending_posts = {}
 
-# очередь
 queue = []
 queue_enabled = False
 posting_enabled = False
 interval_minutes = 5
 
 
-# меню
+# --- меню ---
 def get_menu():
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add("▶️ Старт", "⏹ Стоп")
@@ -31,37 +31,52 @@ def get_menu():
     return kb
 
 
-# категории
-CATEGORIES = {
-    "shoes": ["сапог","бот","туф","кроссов","мюл","босонож","сандал"],
-    "bag": ["сумк","клатч"],
-    "clothes": ["плать","куртк","юбк","пиджак","поло"],
-    "accessories": ["ремень","платок","шарф","украш"]
-}
+# --- бренды ---
+KNOWN_BRANDS = [
+    "max mara", "pinko", "gucci", "prada", "n21", "zara", "dior"
+]
 
 
 def detect_brand(text):
+    text_lower = text.lower()
+
+    for brand in KNOWN_BRANDS:
+        if brand in text_lower:
+            return brand.replace(" ", "")
+
     words = text.strip().split()
     return words[0].lower() if words else None
 
 
+# --- категории ---
 def detect_category(text):
     text = text.lower()
-    for cat, words in CATEGORIES.items():
-        for w in words:
-            if w in text:
-                return cat
+
+    if any(w in text for w in ["сапог","бот","туф","кроссов","мюл","босонож","сандал"]):
+        return "shoes"
+
+    if any(w in text for w in ["сумк","клатч"]):
+        return "bag"
+
+    if any(w in text for w in ["плать","куртк","юбк","пиджак","жакет","поло"]):
+        return "clothes"
+
+    if any(w in text for w in ["ремень","платок","шарф","украш"]):
+        return "accessories"
+
     return None
 
 
+# --- проверки ---
 def is_size_line(line):
-    return bool(re.search(r'(\b\d{2}\b[\s\.\-]?){2,}', line)) or "размер" in line.lower()
+    return bool(re.search(r'(\b\d{2}[\.\s\-]?){2,}', line)) or "размер" in line.lower()
 
 
 def is_price_line(line):
     return "€" in line or "eur" in line.lower() or "цена" in line.lower()
 
 
+# --- обработка текста ---
 def process_text(text):
     final = ""
 
@@ -73,10 +88,12 @@ def process_text(text):
         if not line:
             continue
 
+        # размеры (оставляем формат как есть)
         if is_size_line(line):
             final += "📏 Размеры: " + line + "\n"
             continue
 
+        # цена
         if is_price_line(line):
             price = re.sub(r'[^\d]', '', line)
             if price:
@@ -85,17 +102,21 @@ def process_text(text):
 
         final += line + "\n"
 
-    hashtags = ""
-    if brand:
-        hashtags += f"#{brand} "
-    if category:
-        hashtags += f"#{category}"
+    hashtags = []
 
-    final += "\n" + hashtags
+    if brand and brand not in ["и","на","с","в"]:
+        hashtags.append(f"#{brand}")
+
+    if category:
+        hashtags.append(f"#{category}")
+
+    if hashtags:
+        final += "\n" + " ".join(hashtags)
 
     return final
 
 
+# --- отправка ---
 async def send_post(data):
     try:
         if data["type"] == "photo":
@@ -125,6 +146,7 @@ async def send_post(data):
         print("SEND ERROR:", e)
 
 
+# --- очередь ---
 async def queue_worker():
     while True:
         if posting_enabled and queue:
@@ -133,6 +155,7 @@ async def queue_worker():
         await asyncio.sleep(interval_minutes * 60)
 
 
+# --- управление ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
     await message.answer("Бот готов 🚀", reply_markup=get_menu())
@@ -184,6 +207,7 @@ async def skip(message: types.Message):
         queue.pop(0)
 
 
+# --- основной обработчик ---
 @dp.message_handler(content_types=["photo","video","text"])
 async def handle_post(message: types.Message):
 
@@ -192,7 +216,7 @@ async def handle_post(message: types.Message):
 
     user_id = message.from_user.id
 
-    # альбом
+    # --- альбом ---
     if message.media_group_id:
         group_id = message.media_group_id
         media_groups.setdefault(group_id, []).append(message)
@@ -204,13 +228,13 @@ async def handle_post(message: types.Message):
             return
 
         text = next((m.caption for m in msgs if m.caption), "")
-        final_text = process_text(text)
+        final = process_text(text)
 
         media = []
         for i, m in enumerate(msgs):
             media.append(types.InputMediaPhoto(
                 media=m.photo[-1].file_id,
-                caption=final_text if i == 0 else None
+                caption=final if i == 0 else None
             ))
 
         post_data = {"type":"album","media":media}
@@ -223,7 +247,7 @@ async def handle_post(message: types.Message):
         media_groups.pop(group_id, None)
         return
 
-    # фото/видео
+    # --- фото / видео ---
     if message.photo or message.video:
         text = message.caption or ""
 
@@ -262,7 +286,7 @@ async def handle_post(message: types.Message):
             pending_posts.pop(user_id, None)
         return
 
-    # текст
+    # --- текст ---
     if message.text:
         if user_id in pending_posts:
             msg = pending_posts[user_id]
@@ -291,6 +315,7 @@ async def handle_post(message: types.Message):
             await send_post(post_data)
 
 
+# --- запуск ---
 if __name__ == "__main__":
     async def main():
         asyncio.create_task(queue_worker())
